@@ -163,6 +163,7 @@ def shift_and_shave(n: int, depth: int = 0, visited: Set[int] = None) -> Set[int
     return factors_found
 
 
+
 def factorize(n: int) -> List[int]:
     """
     Returns the list of prime factors of n using the shift-and-shave method.
@@ -178,7 +179,79 @@ def factorize(n: int) -> List[int]:
 
 
 if __name__ == "__main__":
-    number = 900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+    number = 10376
     print(f"Factoring {number} using shift-and-shave method:")
     prime_factors = factorize(number)
     print(f"Prime Factors: {prime_factors}")
+
+
+    def debug_shift_and_shave(n: int):
+        """
+        Debugging function to trace the steps of the shift-and-shave process.
+        """
+        visited = set()
+        binary_n = decimal_to_binary(n)
+        num_bits = len(binary_n)
+        shift_directions = ['left', 'right']
+        shift_positions = range(1, num_bits)
+
+        print(f"Debugging shift-and-shave for number: {n} (binary: {binary_n})")
+
+        # Shift operations
+        for direction in shift_directions:
+            for k in shift_positions:
+                if direction == 'left':
+                    shifted = circular_shift_left(binary_n, k)
+                else:
+                    shifted = circular_shift_right(binary_n, k)
+                shifted_decimal = binary_to_decimal(shifted)
+                print(f"Shift {direction} by {k}: {shifted} -> {shifted_decimal}")
+                if shifted_decimal != 0 and shifted_decimal != n and n % shifted_decimal == 0:
+                    print(f"Found factor from shift: {shifted_decimal}")
+
+        # Shave operations
+        for k in range(1, num_bits):
+            shaved_binaries = shave_bits(binary_n, k)
+            for shaved in shaved_binaries:
+                shaved_decimal = binary_to_decimal(shaved)
+                print(f"Shave {k} bits: {shaved} -> {shaved_decimal}")
+                if shaved_decimal != 0 and n % shaved_decimal == 0:
+                    print(f"Found factor from shave: {shaved_decimal}")
+
+
+    # Debug the factorization of 9106
+    debug_shift_and_shave(number)
+
+
+    def streamlined_factorize(n: int) -> List[int]:
+        """
+        Streamlined factorization focusing on efficiency and direct decomposition into prime factors.
+        """
+        factors = []
+        stack = [n]
+
+        while stack:
+            current = stack.pop()
+            if is_prime(current):
+                factors.append(current)
+            else:
+                # Try to find a factor
+                found_factor = None
+                for i in range(2, int(math.sqrt(current)) + 1):
+                    if current % i == 0:
+                        found_factor = i
+                        break
+
+                if found_factor:
+                    stack.append(found_factor)
+                    stack.append(current // found_factor)
+                else:
+                    # If no factors are found, treat it as prime
+                    factors.append(current)
+
+        return sorted(factors)
+
+
+    # Test the streamlined factorization
+    streamlined_factors = streamlined_factorize(number)
+    print(streamlined_factors)
