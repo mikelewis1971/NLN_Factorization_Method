@@ -1,4 +1,4 @@
-
+I added a bunch of debugging and other methods to deconstruct the composite.  It's a little messy but it's an exploratory tool at this point.  Enjoy the exploration.
 # NLN_Factorization_Method  
 **A New Way to Factor Any Number**
 
