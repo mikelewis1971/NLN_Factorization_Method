@@ -179,7 +179,7 @@ def factorize(n: int) -> List[int]:
 
 
 if __name__ == "__main__":
-    number = 10376
+    number = 1037615213
     print(f"Factoring {number} using shift-and-shave method:")
     prime_factors = factorize(number)
     print(f"Prime Factors: {prime_factors}")
@@ -236,6 +236,7 @@ if __name__ == "__main__":
                 factors.append(current)
             else:
                 # Try to find a factor
+                print('NLN Factoring ')
                 found_factor = None
                 for i in range(2, int(math.sqrt(current)) + 1):
                     if current % i == 0:
@@ -255,3 +256,178 @@ if __name__ == "__main__":
     # Test the streamlined factorization
     streamlined_factors = streamlined_factorize(number)
     print(streamlined_factors)
+
+
+    def decimal_to_binary(n):
+        """Converts a decimal number to its binary representation."""
+        return bin(n)[2:]
+
+
+    def binary_to_decimal(b):
+        """Converts a binary string to its decimal representation."""
+        return int(b, 2)
+
+
+    def shift_bits(b, direction, k):
+        """Performs left, right, or circular shift on a binary string."""
+        n = len(b)
+        if direction == 'left':
+            shifted = (b[k:] + '0' * k) if k < n else '0' * n
+        elif direction == 'right':
+            shifted = ('0' * k + b[:-k]) if k < n else '0' * n
+        elif direction == 'circular':
+            k = k % n
+            shifted = b[k:] + b[:k]
+        else:
+            raise ValueError("Invalid shift direction.")
+        return shifted
+
+
+    def shave_bits(b):
+        """Generates all possible shaves (removing leading bits) of a binary string."""
+        return [b[i:] for i in range(1, len(b))]
+
+
+    def is_prime(n):
+        """Checks if a number is prime."""
+        if n <= 1:
+            return False
+        for i in range(2, int(n ** 0.5) + 1):
+            if n % i == 0:
+                return False
+        return True
+
+
+    def shift_and_shave_factors(n):
+        """Applies shift-and-shave operations to find factors of n."""
+        factors = set()
+        binary_n = decimal_to_binary(n)
+
+        # Apply shift operations
+        for direction in ['left', 'right', 'circular']:
+            for k in range(1, len(binary_n)):
+                shifted = shift_bits(binary_n, direction, k)
+                shifted_decimal = binary_to_decimal(shifted)
+                if shifted_decimal > 0 and n % shifted_decimal == 0:
+                    factors.add(shifted_decimal)
+
+        # Apply shave operations on the original and shifted binary strings
+        all_binaries = [binary_n] + [shift_bits(binary_n, 'circular', k) for k in range(1, len(binary_n))]
+        for b in all_binaries:
+            for shaved in shave_bits(b):
+                shaved_decimal = binary_to_decimal(shaved)
+                if shaved_decimal > 0 and n % shaved_decimal == 0:
+                    factors.add(shaved_decimal)
+
+        # Return sorted factors
+        return sorted(factors)
+
+
+    def recursive_factorization(n):
+        """Recursively factorizes a number into its prime factors."""
+        factors = []
+        to_factor = [n]
+
+        while to_factor:
+            current = to_factor.pop()
+            sub_factors = shift_and_shave_factors(current)
+
+            for factor in sub_factors:
+                if factor > 1 and is_prime(factor):
+                    factors.append(factor)
+                elif factor > 1 and factor not in factors:
+                    to_factor.append(factor)
+
+        return sorted(factors)
+
+
+    def manual_factorization(n):
+        """Manual factorization to ensure complete factor breakdown."""
+        factors = []
+        divisor = 2  # Start checking from the smallest prime number.
+
+        while n > 1:
+            if n % divisor == 0:
+                factors.append(divisor)
+                n //= divisor  # Reduce the number by the divisor.
+            else:
+                divisor += 1 if divisor == 2 else 2  # Skip even numbers > 2.
+
+        return factors
+
+
+    def full_factorization(n):
+        """Combines shift-and-shave with manual factorization to ensure completeness."""
+        shift_and_shave_result = recursive_factorization(n)
+        manual_result = manual_factorization(n)
+        return sorted(set(shift_and_shave_result + manual_result))
+
+
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+
+    # Adding multithreading to enhance the factorization process
+
+    def threaded_shift_and_shave_factors(n):
+        """Applies shift-and-shave operations to find factors of n using multithreading."""
+        factors = set()
+        binary_n = decimal_to_binary(n)
+
+        # Function to process shifts in parallel
+        def process_shift(direction, k):
+            shifted = shift_bits(binary_n, direction, k)
+            shifted_decimal = binary_to_decimal(shifted)
+            if shifted_decimal > 0 and n % shifted_decimal == 0:
+                return shifted_decimal
+            return None
+
+        # Function to process shaves in parallel
+        def process_shave(binary_string):
+            shaved_factors = []
+            for shaved in shave_bits(binary_string):
+                shaved_decimal = binary_to_decimal(shaved)
+                if shaved_decimal > 0 and n % shaved_decimal == 0:
+                    shaved_factors.append(shaved_decimal)
+            return shaved_factors
+
+        # Perform shifts using multithreading
+        shift_tasks = []
+        with ThreadPoolExecutor() as executor:
+            for direction in ['left', 'right', 'circular']:
+                for k in range(1, len(binary_n)):
+                    shift_tasks.append(executor.submit(process_shift, direction, k))
+
+            for future in as_completed(shift_tasks):
+                result = future.result()
+                if result:
+                    factors.add(result)
+
+        # Perform shaves using multithreading
+        shave_tasks = []
+        all_binaries = [binary_n] + [shift_bits(binary_n, 'circular', k) for k in range(1, len(binary_n))]
+        with ThreadPoolExecutor() as executor:
+            for binary_string in all_binaries:
+                shave_tasks.append(executor.submit(process_shave, binary_string))
+
+            for future in as_completed(shave_tasks):
+                results = future.result()
+                factors.update(results)
+
+        return sorted(factors)
+
+
+    def threaded_full_factorization(n):
+        """Combines threaded shift-and-shave with manual factorization for completeness."""
+        shift_and_shave_result = threaded_shift_and_shave_factors(n)
+        manual_result = manual_factorization(n)
+        return sorted(set(shift_and_shave_result + manual_result))
+
+
+    # Test the multithreaded implementation with a number
+    number = 357357
+    threaded_factors = threaded_full_factorization(number)
+    print(threaded_factors)
+
+
+
+
